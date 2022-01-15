@@ -29,14 +29,21 @@ const roomId = uuidV4();
 // console.log(roomId);
 
 io.on("connection", (socket) => {
-  socket.on("joinRoom", (roomid, userId) => {
+  socket.on("joinRoom", (roomid, userId, isSs) => {
     console.log(roomid, userId);
+    console.log("room-joined");
     socket.join(roomid);
 
-    socket.to(roomid).emit("user-connected", userId);
+    socket.to(roomid).emit("user-connected", userId, isSs);
 
     socket.on("disconnect", () => {
       socket.to(roomid).emit("user-disconnected", userId);
+    });
+    socket.on("leaveRoom", (userid) => {
+      socket.to(roomid).emit("user-disconnected", userid);
+    });
+    socket.on("ssClose", () => {
+      socket.to(roomid).emit("remoteSsClose");
     });
   });
 });
