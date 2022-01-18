@@ -7,7 +7,7 @@ function App() {
     <div>
       <Layout>
         <Routes>
-          <Route path="/video/:roomId" element={<VideoCall />} />
+          <Route path="/video/:roomId/:name" element={<VideoCall />} />
           <Route path="/" element={<Main />} />
         </Routes>
       </Layout>

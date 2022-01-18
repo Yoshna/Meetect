@@ -29,18 +29,27 @@ const roomId = uuidV4();
 // console.log(roomId);
 
 io.on("connection", (socket) => {
-  socket.on("joinRoom", (roomid, userId, isSs) => {
-    console.log(roomid, userId);
-    console.log("room-joined");
+  socket.on("joinRoom", (roomid, userId, name) => {
+    // console.log(roomid, userId);
+    // console.log("room-joined");
     socket.join(roomid);
 
-    socket.to(roomid).emit("user-connected", userId, isSs);
+    socket.to(roomid).emit("user-connected", userId);
+    socket
+      .to(roomid)
+      .emit("message", "Meetect Bot", `${name} has joined the chat`);
 
     socket.on("disconnect", () => {
       socket.to(roomid).emit("user-disconnected", userId);
+      socket
+        .to(roomid)
+        .emit("message", "Meetect Bot", `${name} has left the chat`);
     });
     socket.on("leaveRoom", (userid) => {
       socket.to(roomid).emit("user-disconnected", userid);
+    });
+    socket.on("chatmessage", (name, msg) => {
+      io.to(roomid).emit("message", name, msg);
     });
     socket.on("ssClose", () => {
       socket.to(roomid).emit("remoteSsClose");

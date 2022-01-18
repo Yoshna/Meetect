@@ -5,6 +5,9 @@ import ConversationButtons from "../ConversationButtons/ConversationButtons";
 import Peer from "peerjs";
 import io from "socket.io-client";
 import { MdStopScreenShare } from "react-icons/md";
+// import GroupChat from "../GroupChat/GroupChat";
+import MessageFormat from "../MessageFormat/MessageFormat";
+import moment from "moment";
 
 const socket = io(`${process.env.REACT_APP_SERVER_URL}`);
 const peers = {};
@@ -18,15 +21,17 @@ const VideoCall = (props) => {
   const [screenSharingActive, setScreenSharingActive] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const [ssStream, setSsStream] = useState(null);
+  const [chat, setChat] = useState({ name: "", message: "" });
+  const [chatLog, setChatLog] = useState([]);
   const peerInstance = useRef(null);
+  // const chatBox = document.getElementById("chat-box");
 
   let { roomId } = useParams();
+  let { name } = useParams();
+  // console.log(name);
 
   const myVideo = document.createElement("video");
   myVideo.muted = true;
-
-  // console.log(roomId);
-  // console.log("okkkkkk");
 
   useEffect(() => {
     const peer = new Peer();
@@ -35,7 +40,7 @@ const VideoCall = (props) => {
       setPeerId(id);
       console.log(roomId, id);
       // console.log(peerId);
-      socket.emit("joinRoom", roomId, id);
+      socket.emit("joinRoom", roomId, id, name);
     });
 
     let getUserMedia =
@@ -61,7 +66,11 @@ const VideoCall = (props) => {
           });
           // console.log(call.peer, "calllll");
           console.log("call incoming");
-          peers[call.peer] = call;
+          if (peers[call.peer]) {
+            peers["screenshare"] = call;
+          } else {
+            peers[call.peer] = call;
+          }
           console.log(peers);
           const videoElement = document.createElement("video");
           call.on("stream", (remoteStream) => {
@@ -76,9 +85,10 @@ const VideoCall = (props) => {
           });
           socket.on("remoteSsClose", () => {
             // if (remoteStream.kind === "video") return;
-            const divElement = document.getElementById("video-element-wrapper");
-            const ssElement = document.getElementById("ssclose");
-            divElement.removeChild(ssElement);
+            // const divElement = document.getElementById("video-element-wrapper");
+            // const ssElement = document.getElementById("ssclose");
+            // divElement.removeChild(ssElement);
+            peers["screenshare"].close();
 
             //videoElement.remove();
           });
@@ -89,23 +99,32 @@ const VideoCall = (props) => {
           });
         });
 
-        socket.on("user-connected", (userId, isSs) => {
-          // console.log("user-connected", userId);
-          // console.log(isSs);
-          // if (isSs) {
-          //   console.log("user-connect", userId);
-          //   screenShare(screenSharingActive);
-          // } else {
+        socket.on("user-connected", (userId) => {
           connectToNewUser(userId, stream);
-          // }
         });
-        // localVideoRef.current.srcObject = stream;
-        // localVideoRef.current.play();
       },
       (err) => {
         console.log("Failed to get local stream", err);
       }
     );
+
+    socket.on("message", (name, msg) => {
+      console.log("chatttt");
+      console.log(chatLog);
+      // let newChatLog = [...chatLog];
+      // console.log(newChatLog);
+      // newChatLog = newChatLog.concat([{ name: name, message: msg }]);
+      // console.log(newChatLog);
+      // chatBox.scrollTop = chatBox.scrollHeight;
+      setChatLog((chatLog) => {
+        let newChatLog = [...chatLog];
+        newChatLog.push({ name: name, message: msg });
+        return newChatLog;
+      });
+      const div_element = document.getElementById("chat-box");
+      div_element.scrollTop = div_element.scrollHeight;
+    });
+
     socket.on("user-disconnected", (userId) => {
       console.log(userId, "okayyyyyy");
 
@@ -165,39 +184,12 @@ const VideoCall = (props) => {
     console.log(ssEnabled);
     screenShare(ssEnabled);
     setScreenSharingActive(!ssEnabled);
-    // if (!ssEnabled) {
-    //   const ssPeer = new Peer();
-    //   ssPeer.on("open", (id) => {
-    //     console.log(roomId, id);
-    //     // console.log(peerId);
-    //     setssPeerId(id);
-    //     const isSs = true;
-    //     socket.emit("joinRoom", roomId, id, isSs);
-    //   });
-    // } else {
-    //   screenShare(ssEnabled);
-    // }
-    // screenShare(ssEnabled);
-    // setScreenSharingActive(!ssEnabled);
   };
 
   const screenShare = async (ssEnabled) => {
     const videoElement = document.createElement("video");
     videoElement.setAttribute("id", "ss");
     if (ssEnabled) {
-      ssStream.getVideoTracks()[0].enabled = !ssEnabled;
-      // videoElement.pause();
-      // videoElement.removeAttribute("src"); // empty source
-      // videoElement.load();
-      // const participants =  Object.values(peers)
-      // participants.forEach(calls => {
-
-      // })
-      // if (peers[userId]) {
-      //   peers[userId].close();
-      //   // delete peers.userId;
-      //   delete peers[userId];
-      // }
       console.log("ugghhhhhh");
       socket.emit("ssClose");
 
@@ -229,18 +221,11 @@ const VideoCall = (props) => {
         vidTrack.onended = () => {
           // peerInstance.current.call(userid, "screensharecancel");
           console.log("closeee");
+          socket.emit("ssClose");
           stopScreenShare(videoElement);
-          //call.close();
+          call.close();
         };
       });
-      // console.log(currPeer);
-      // let sender = currPeer.getSenders().find((s) => {
-      //   return s.track.kind === vidTrack.kind;
-      // });
-      // sender.replaceTrack(vidTrack);
-      // // sender[1].close();
-      // console.log(sender);
-
       setSsStream(stream);
       addVideoStream(videoElement, stream);
     }
@@ -249,18 +234,72 @@ const VideoCall = (props) => {
   const stopScreenShare = (videoElement) => {
     videoElement.remove();
   };
+  let renderChat = [];
+  if (chatLog.length > 0) {
+    console.log("renderchat");
+    console.log(chatLog);
+    renderChat = chatLog.map(({ name, message }, index) => {
+      // console.log(time);
+      const time = moment().format("h:mm a");
+      return (
+        <MessageFormat key={index} name={name} message={message} time={time} />
+        // <div key={index}>
+        //   <p>
+        //     {name} <span>9:20pm</span>
+        //   </p>
+        //   <p>{message}</p>
+        // </div>
+      );
+    });
+    // console.log(renderChat);
+  }
+
+  const onMessageHandler = (e) => {
+    setChat({ name: name, message: e.target.value });
+  };
+
+  const submitHandler = (e) => {
+    e.preventDefault();
+    console.log(chat.name, chat.message);
+    // const time = moment().format("h:mm a");
+    // console.log(time);
+    socket.emit("chatmessage", chat.name, chat.message);
+    const inputfield = document.getElementById("message-input-field");
+    inputfield.value = "";
+  };
 
   return (
     <div className={classes.Header}>
-      <div id="video-element-wrapper"></div>
-      <ConversationButtons
-        videoStateChange={handleCameraButtonPressed}
-        localCameraEnabled={localCameraEnabled}
-        micStateChange={handleMicButtonPressed}
-        localMicrophoneEnabled={localMicrophoneEnabled}
-        ScreenShareStateChange={handleScreenSharingButtonPressed}
-        screenSharingActive={screenSharingActive}
-      />
+      <div>
+        <div id="video-element-wrapper"></div>
+        <ConversationButtons
+          videoStateChange={handleCameraButtonPressed}
+          localCameraEnabled={localCameraEnabled}
+          micStateChange={handleMicButtonPressed}
+          localMicrophoneEnabled={localMicrophoneEnabled}
+          ScreenShareStateChange={handleScreenSharingButtonPressed}
+          screenSharingActive={screenSharingActive}
+        />
+      </div>
+      <div>
+        <div className={classes.Box}>
+          <h2>Meetect Chat</h2>
+        </div>
+        <div className={classes.Box} id="chat-box">
+          {renderChat}
+        </div>
+        <div className={classes.Box}>
+          <form onSubmit={submitHandler}>
+            <input
+              id="message-input-field"
+              type="text"
+              placeholder="Enter Message"
+              // value={chat.message}
+              onChange={onMessageHandler}
+            />
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

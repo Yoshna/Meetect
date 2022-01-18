@@ -10,6 +10,7 @@ const Main = (props) => {
   const [joinRoom, setJoinRoom] = useState(false);
   const [roomId, setRoomId] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [name, setName] = useState("");
 
   const navigate = useNavigate();
 
@@ -29,11 +30,15 @@ const Main = (props) => {
   const sendCodeHandler = async () => {
     if (roomCode) {
       //await axios.post("/api/roomid", roomCode);
-      navigate(`/video/${roomCode}`);
+      navigate(`/video/${roomCode}/${name}`);
     }
     if (roomId) {
-      navigate(`/video/${roomId}`);
+      navigate(`/video/${roomId}/${name}`);
     }
+  };
+
+  const nameHandler = (e) => {
+    setName(e.target.value);
   };
 
   let modal = null;
@@ -42,7 +47,15 @@ const Main = (props) => {
       const para = (
         <>
           <p>Room code: {roomId}</p>
-          <button onClick={sendCodeHandler}>Done</button>
+          <input
+            type="text"
+            value={name}
+            placeholder="Enter your name"
+            onChange={nameHandler}
+          />
+          <div>
+            <button onClick={sendCodeHandler}>Done</button>
+          </div>
         </>
       );
       modal = <Modal show>{para}</Modal>;
@@ -56,7 +69,15 @@ const Main = (props) => {
             onChange={(e) => setRoomCode(e.target.value)}
             placeholder="Enter Room Code"
           />
-          <button onClick={sendCodeHandler}>Done</button>
+          <input
+            type="text"
+            value={name}
+            placeholder="Enter your name"
+            onChange={nameHandler}
+          />
+          <div>
+            <button onClick={sendCodeHandler}>Done</button>
+          </div>
         </>
       );
       modal = <Modal show>{input}</Modal>;

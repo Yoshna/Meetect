@@ -1,0 +1,17 @@
+.MessageBox {
+  width: 100%;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 3px #ccc;
+  background-color: #6f2da8;
+  color: white;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+.MessageLabel {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+  justify-content: space-between;
+  font-weight: bold;
+}

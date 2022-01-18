@@ -2,6 +2,10 @@
   width: 90%;
   padding: 30px;
   margin: 50px 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* font-weight: bold; */
 }
 .Footer {
   height: 56px;
@@ -16,4 +20,23 @@
   padding: 0 20px;
   box-sizing: border-box;
   z-index: 90;
+}
+.Box {
+  /* width: 80%;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 3px #ccc;
+  background-color: white;
+  color: black;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box; */
+  padding: 10px;
+  width: 100%;
+  background-color: white;
+  max-height: 500px;
+  /* margin-bottom: 10px; */
+  overflow-y: scroll;
+}
+h2 {
+  text-align: center;
 }
