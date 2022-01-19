@@ -12,6 +12,7 @@ const io = require("socket.io")(server, {
   },
 });
 const { v4: uuidV4 } = require("uuid");
+const { userJoin, getUsers, userLeft } = require("./users");
 
 app.use(cors({ origin: `${process.env.CLIENT_URL}`, credentials: true }));
 app.use((req, res, next) => {
@@ -33,17 +34,26 @@ io.on("connection", (socket) => {
     // console.log(roomid, userId);
     // console.log("room-joined");
     socket.join(roomid);
+    userJoin(userId, name, roomid);
 
-    socket.to(roomid).emit("user-connected", userId);
+    socket.to(roomid).emit("user-connected", userId, name);
     socket
       .to(roomid)
       .emit("message", "Meetect Bot", `${name} has joined the chat`);
 
+    io.to(roomid).emit("roomUsers", {
+      users: getUsers(roomid),
+    });
+
     socket.on("disconnect", () => {
+      userLeft(userId);
       socket.to(roomid).emit("user-disconnected", userId);
       socket
         .to(roomid)
         .emit("message", "Meetect Bot", `${name} has left the chat`);
+      io.to(roomid).emit("roomUsers", {
+        users: getUsers(roomid),
+      });
     });
     socket.on("leaveRoom", (userid) => {
       socket.to(roomid).emit("user-disconnected", userid);

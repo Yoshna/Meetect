@@ -1,0 +1,8 @@
+.chatSidebar {
+  padding: 10px;
+  width: 100%;
+  background-color: white;
+  max-height: 500px;
+  /* margin-bottom: 10px; */
+  overflow-y: scroll;
+}

@@ -7,6 +7,7 @@ import io from "socket.io-client";
 import { MdStopScreenShare } from "react-icons/md";
 // import GroupChat from "../GroupChat/GroupChat";
 import MessageFormat from "../MessageFormat/MessageFormat";
+import Participants from "../Participants/Participants";
 import moment from "moment";
 
 const socket = io(`${process.env.REACT_APP_SERVER_URL}`);
@@ -23,11 +24,12 @@ const VideoCall = (props) => {
   const [ssStream, setSsStream] = useState(null);
   const [chat, setChat] = useState({ name: "", message: "" });
   const [chatLog, setChatLog] = useState([]);
+  let { name } = useParams();
+  const [peerNames, setPeerNames] = useState([]);
   const peerInstance = useRef(null);
   // const chatBox = document.getElementById("chat-box");
 
   let { roomId } = useParams();
-  let { name } = useParams();
   // console.log(name);
 
   const myVideo = document.createElement("video");
@@ -71,6 +73,11 @@ const VideoCall = (props) => {
           } else {
             peers[call.peer] = call;
           }
+          // setPeerNames((peerNames) => {
+          //   let newPeerNames = [...peerNames];
+          //   newPeerNames.push(name);
+          //   return newPeerNames;
+          // });
           console.log(peers);
           const videoElement = document.createElement("video");
           call.on("stream", (remoteStream) => {
@@ -99,8 +106,8 @@ const VideoCall = (props) => {
           });
         });
 
-        socket.on("user-connected", (userId) => {
-          connectToNewUser(userId, stream);
+        socket.on("user-connected", (userId, name) => {
+          connectToNewUser(userId, stream, name);
         });
       },
       (err) => {
@@ -125,6 +132,13 @@ const VideoCall = (props) => {
       div_element.scrollTop = div_element.scrollHeight;
     });
 
+    socket.on("roomUsers", (users) => {
+      console.log(users);
+      let newPeerNames = users.users.map((user) => user.name);
+      console.log(newPeerNames);
+      setPeerNames(newPeerNames);
+    });
+
     socket.on("user-disconnected", (userId) => {
       console.log(userId, "okayyyyyy");
 
@@ -140,6 +154,8 @@ const VideoCall = (props) => {
     peerInstance.current = peer;
   }, []);
 
+  // console.log(peerNames);
+
   const addVideoStream = (video, stream) => {
     video.srcObject = stream;
     video.addEventListener("loadedmetadata", () => {
@@ -149,7 +165,7 @@ const VideoCall = (props) => {
     if (divElement) divElement.appendChild(video);
   };
 
-  const connectToNewUser = (userId, stream) => {
+  const connectToNewUser = (userId, stream, name) => {
     const call = peerInstance.current.call(userId, stream);
     const videoElement = document.createElement("video");
     call.on("stream", (remoteStream) => {
@@ -163,11 +179,17 @@ const VideoCall = (props) => {
     });
 
     peers[userId] = call;
+    // setPeerNames((peerNames) => {
+    //   let newPeerNames = [...peerNames];
+    //   newPeerNames.push(name);
+    //   return newPeerNames;
+    // });
+
     console.log(peers);
   };
 
   const handleCameraButtonPressed = () => {
-    console.log("gdujgvgdb");
+    // console.log("gdujgvgdb");
     const cameraEnabled = localCameraEnabled;
     cameraStream.getVideoTracks()[0].enabled = !cameraEnabled;
     setLocalCameraEnabled(!cameraEnabled);
@@ -270,6 +292,9 @@ const VideoCall = (props) => {
 
   return (
     <div className={classes.Header}>
+      <div>
+        <Participants participantsList={peerNames} />
+      </div>
       <div>
         <div id="video-element-wrapper"></div>
         <ConversationButtons
